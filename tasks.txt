@@ -1,0 +1,8 @@
+End Goals - 
+
+An IDE where user's can create React projects.
+    Features - 
+        Real time preview
+        Easy to use and manage
+        Collaboration between multiple users
+        Communication like a zoom call - Video and Voice

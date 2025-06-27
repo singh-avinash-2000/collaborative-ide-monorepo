@@ -1,0 +1,24 @@
+{
+"compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "skipDefaultLibCheck": true,
+    "noUnusedParameters": true,
+    "lib": ["dom", "es2015", "es2017"],
+    "jsx": "react",
+    "declaration": true,
+    "declarationDir": "./dist/types",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,    
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "rootDirs": ["src"],
+},
+"include": ["./**/*.ts", "./**/*.tsx"],
+"exclude": ["node_modules", "dist"]
+}
+
+

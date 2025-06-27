@@ -1,0 +1,4 @@
+packages:
+  - 'react-file-navigator'
+  - 'ide-frontend'
+  - 'IDE-preview'
