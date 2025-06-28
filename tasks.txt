@@ -1,8 +1,44 @@
 End Goals - 
-
+===========
 An IDE where user's can create React projects.
+
     Features - 
-        Real time preview
+        Real time preview [In - Progress]
         Easy to use and manage
         Collaboration between multiple users
         Communication like a zoom call - Video and Voice
+        Built in AI capability - prompt and it would build templates and features
+        Export projects to run locally
+        Publish sites, integrate netlify to create a publish feature.
+
+---------------------------------------------------------------------------------
+
+Tasks - 
+=======
+Breakdown of every task based on its priority.
+
+    High
+    ----
+    Setup Communincation Channel Class [In - Progress]:
+        Write a class which can be used to communicate between the windows. [Might need to refactor and test if I can send messages to the editor window from the preview window]
+
+    Add package:
+        Option to add package - add a package.json file and that would be treated as the dependency json. Any change on that file would re trigger module resolution.
+        Remove package from the local node_module files.
+
+    Show preview as soon as the application loads and modules get resolved [In - Progress]:
+        RnD on how I can structure the events so it loads the preview on page load, and rebuilds on every change. [Need to be sure that the way its implemented is the correct way].
+
+
+    Middle
+    ------
+    Store package file contents locally (Index DB) to speed up the initial builds on reload.
+
+
+    Low
+    ---
+    Add Index.html:
+        Use this similar to playcode.io and get the entry point from there.
+
+    Fasten the build process:
+        Bundle every package individually and resolve the bundled package instead of individual file path.

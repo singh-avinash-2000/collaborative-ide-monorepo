@@ -2,6 +2,7 @@ import * as esbuild from 'esbuild-wasm';
 import { ModuleResolutionUtil } from './ModuleResolutionUtil';
 import { getSrcHtml } from '../templates/template';
 import * as Path from 'path-browserify';
+import { ViewManager } from './ViewManager';
 
 interface PackageInfo {
 	packageName: string;
@@ -12,6 +13,7 @@ interface PackageInfo {
 export class Bundler {
 	private constructor() {
 		this._moduleResolver = ModuleResolutionUtil.getInstance();
+		this._viewer = ViewManager.getInstance();
 	}
 
 	private static _instance: Bundler | null = null;
@@ -22,6 +24,7 @@ export class Bundler {
 	private _lastBundle: string | undefined;
 	private _isInitialized: boolean = false;
 	private _builderContext: esbuild.BuildContext | undefined;
+	private _viewer: ViewManager;
 
 	public get isInitialized(): boolean {
 		return this._isInitialized;
@@ -45,20 +48,21 @@ export class Bundler {
 		return this._instance;
 	}
 
-	public async initialize(packageJson: Record<string, string>): Promise<void> {
+	public async initialize(packageJson: Record<string, string>, files: Record<string, string>): Promise<void> {
 		try {
 			console.time('Bundler Initialization');
-
-			console.log('Initializing bundler...');
-			await esbuild.initialize({
-				worker: false,
-				wasmURL: 'https://unpkg.com/esbuild-wasm@0.19.12/esbuild.wasm',
-			});
-			console.log('Initialized bundler');
+			this._project_files = files;
+			if (!this._isInitialized) {
+				await esbuild.initialize({
+					worker: false,
+					wasmURL: 'https://unpkg.com/esbuild-wasm@0.19.12/esbuild.wasm',
+				});
+				this._isInitialized = true;
+				console.log('Bundler initialized');
+			}
 
 			this.projectDependencies = packageJson;
 
-			console.log('Resolving dependencies...');
 			await this._moduleResolver.resolveDependencies(packageJson);
 			console.log('Resoled dependencies');
 
@@ -68,7 +72,7 @@ export class Bundler {
 				bundle: true,
 				entryPoints: [this._entryPoint],
 				platform: 'browser',
-				format: 'iife',
+				format: 'esm',
 				minify: true,
 				treeShaking: false,
 				resolveExtensions: ['.tsx', '.ts', '.js', '.jsx', '.css'],
@@ -84,9 +88,8 @@ export class Bundler {
 				},
 				write: false,
 			});
-
 			console.timeEnd('Bundler Initialization');
-			this._isInitialized = true;
+			await this.rebuild(files);
 		} catch (error) {
 			console.log('Error occured initializing bundler', error);
 		}
@@ -164,7 +167,7 @@ export class Bundler {
 		},
 	};
 
-	public async bundle(files: Record<string, string>): Promise<string | undefined> {
+	public async rebuild(files: Record<string, string>): Promise<void> {
 		try {
 			this._project_files = files;
 			console.time('Bundling');
@@ -173,45 +176,11 @@ export class Bundler {
 				const htmlContent = getSrcHtml(content.outputFiles[0].text);
 				this._lastBundle = htmlContent;
 				console.timeEnd('Bundling');
-				return htmlContent;
+				this._viewer.updatePreview(htmlContent);
 			}
 		} catch (error) {
 			console.log('Error during bundling:', error);
 			console.timeEnd('BUNDLING');
-		}
-	}
-
-	public async transpileCode(filePath: string, content: string): Promise<string | undefined> {
-		this._project_files[filePath] = content;
-
-		try {
-			if (!this._lastBundle) {
-				console.error('No last bundle found. Please run bundle() first.');
-				return undefined;
-			}
-
-			const transpiledCode = await esbuild.transform(content, {
-				loader: getLoader(Path.extname(filePath)),
-				target: ['esnext'],
-				format: 'iife', // important
-				platform: 'browser',
-				treeShaking: false,
-				banner: `// file-tree:${filePath}\n`, // Optional: keep marker in replacement
-			});
-
-			console.log(transpiledCode);
-
-			// Escape special characters in filePath for safe regex usage
-			const escapedPath = filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-			const pattern = new RegExp(`// file-tree:${escapedPath}[\\s\\S]*?(?=// (file-tree|node-modules):|$)`);
-
-			const updated = this._lastBundle.replace(pattern, `// file-tree:${filePath}\n${transpiledCode.code}`);
-
-			return updated;
-		} catch (error) {
-			console.log('Error during transpilation:', error);
-			return undefined;
 		}
 	}
 }

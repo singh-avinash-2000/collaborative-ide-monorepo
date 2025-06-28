@@ -1,10 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import { useGlobalStore } from '@/store/globalStore';
+import { IframeMessenger, MessengerDataTypePost } from '@/utils/IframeMessenger';
 
 const EditorComponent = ({ iFrameRef }: { iFrameRef: React.RefObject<HTMLIFrameElement | null> }) => {
 	const { currentFile, getFileContent, setFileContents, fileContents } = useGlobalStore();
 	const monacoRef = useRef<any>(null);
+	const [hasInitialized, setHasInitialized] = useState<boolean>(false);
+
+	const messengerRef = useRef<IframeMessenger>(null);
 
 	function handleEditorWillMount(monaco: Monaco) {
 		monaco.languages.typescript.javascriptDefaults.setEagerModelSync(true);
@@ -21,8 +25,36 @@ const EditorComponent = ({ iFrameRef }: { iFrameRef: React.RefObject<HTMLIFrameE
 		}
 
 		setFileContents(currentFile?.filePath, value || '');
-		iFrameRef.current?.contentWindow?.postMessage({ type: 'Update_Code', files: fileContents }, 'http://localhost:5173');
+
+		messengerRef.current?.sendMessage({
+			type: MessengerDataTypePost.REBUILD,
+			data: {
+				files: fileContents,
+			},
+		});
 	};
+
+	useEffect(() => {
+		if (!iFrameRef.current) return;
+
+		if (Object.keys(fileContents).length > 0) {
+			if (!hasInitialized) {
+				messengerRef.current = IframeMessenger.createInstance(iFrameRef.current);
+
+				messengerRef.current.sendMessage({
+					type: MessengerDataTypePost.INITIALIZE,
+					data: {
+						packages: {
+							react: '18.2.0',
+							'react-dom': '18.2.0',
+						},
+						files: fileContents,
+					},
+				});
+			}
+			setHasInitialized(true);
+		}
+	}, [fileContents]);
 
 	return (
 		<Editor

@@ -13,7 +13,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ iFrameRef }) => {
 	const { fileTree, setFileTree, setCurrentFile, setEntryPoint } = useGlobalStore();
 
 	const handleFileSelectionChange = (currentFile: TreeNode | null) => {
-		console.log('File selection changed:', currentFile);
 		if (currentFile?.type === 'File') {
 			setCurrentFile(currentFile);
 		}

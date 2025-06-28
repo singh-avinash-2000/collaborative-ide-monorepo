@@ -1,90 +1,94 @@
-import { useEffect, useRef } from 'react';
-import { Bundler } from './utils/Bundler';
+import { useEffect, useRef, useState } from 'react';
+// import { Bundler } from './utils/Bundler';
+import { PreviewMessenger } from './utils/PreviewMessenger';
+import { ViewManager } from './utils/ViewManager';
 function App() {
 	const iFrameRef = useRef<HTMLIFrameElement | null>(null);
-	const bundler = Bundler.getInstance();
+	const viewer = useRef<ViewManager>(null);
+	// const bundler = Bundler.getInstance();
 
-	const debounce = <F extends (...args: any[]) => void>(func: F, delay: number) => {
-		let timeoutId: ReturnType<typeof setTimeout> | null;
-		return (...args: Parameters<F>) => {
-			if (timeoutId) {
-				clearTimeout(timeoutId);
-			}
-			timeoutId = setTimeout(() => {
-				func(...args);
-			}, delay);
-		};
-	};
+	// const debounce = <F extends (...args: any[]) => void>(func: F, delay: number) => {
+	// 	let timeoutId: ReturnType<typeof setTimeout> | null;
+	// 	return (...args: Parameters<F>) => {
+	// 		if (timeoutId) {
+	// 			clearTimeout(timeoutId);
+	// 		}
+	// 		timeoutId = setTimeout(() => {
+	// 			func(...args);
+	// 		}, delay);
+	// 	};
+	// };
 
-	const debouncedTranspileCode = debounce(async (files: Record<string, string>) => {
-		transpileCode(files);
-	}, 0);
+	// const debouncedTranspileCode = debounce(async (files: Record<string, string>) => {
+	// 	transpileCode(files);
+	// }, 100);
 
-	const transpileCode = async (files: Record<string, string>) => {
-		let result: string | undefined;
-		result = await bundler.bundle(files);
+	// const transpileCode = async (files: Record<string, string>) => {
+	// 	await bundler.rebuild(files);
+	// };
 
-		updatePreview(result || '');
-	};
+	// useEffect(() => {
+	// 	// const handleMessage = async (event: MessageEvent) => {
+	// 	// 	if (event.origin !== 'http://localhost:3000') return;
 
-	const updatePreview = (content: string) => {
-		const iframe = iFrameRef.current;
-		if (iframe) {
-			const iframeWindow = iframe.contentWindow;
+	// 	// 	const rootPackages: Record<string, string> = {
+	// 	// 		react: '18.2.0',
+	// 	// 		'react-dom': '18.2.0',
+	// 	// 	};
 
-			if (iframeWindow) {
-				// Capture the current route inside the iframe
-				const currentIframeRoute = iframeWindow.location.hash || iframeWindow.location.pathname;
+	// 	// 	if (bundler.isInitialized === false) {
+	// 	// 		await bundler.initialize(rootPackages);
+	// 	// 	}
 
-				const doc = iframeWindow.document;
-				if (doc) {
-					doc.open();
-					doc.write(content); // Write the new content into the iframe
-					doc.close();
+	// 	// 	if (event.data.type === 'SET_ENTRY_POINT') {
+	// 	// 		bundler.entryPoint = event.data.entryPoint;
+	// 	// 		await bundler.initialize(rootPackages);
+	// 	// 		return;
+	// 	// 	}
 
-					if (currentIframeRoute && currentIframeRoute != 'blank') {
-						iframeWindow.history.replaceState(null, '', currentIframeRoute);
-					}
-				}
-			}
-		}
-	};
+	// 	// 	debouncedTranspileCode(event.data.data.files);
+	// 	// };
+
+	// 	const messenger = PreviewMessenger.getInstance();
+	// 	window.addEventListener('message', (event) => messenger.messageListener(event));
+	// 	return () => window.removeEventListener('message', messenger.messageListener);
+	// }, []);
 
 	useEffect(() => {
-		const handleMessage = async (event: MessageEvent) => {
-			if (event.origin !== 'http://localhost:3000') return;
+		if (!iFrameRef.current) return;
 
-			if (bundler.isInitialized === false) {
-				const rootPackages: Record<string, string> = {
-					react: '18.2.0',
-					'react-dom': '18.2.0',
-				};
-				await bundler.initialize(rootPackages);
-			}
+		viewer.current = ViewManager.createInstance(iFrameRef.current);
 
-			if (event.data.type === 'SET_ENTRY_POINT') {
-				bundler.entryPoint = event.data.entryPoint;
-			}
+		const messenger = PreviewMessenger.getInstance();
+		const listener = messenger.messageListener.bind(messenger);
 
-			debouncedTranspileCode(event.data.files);
+		window.addEventListener('message', listener);
+
+		return () => {
+			window.removeEventListener('message', listener);
 		};
-
-		window.addEventListener('message', handleMessage);
-		return () => window.removeEventListener('message', handleMessage);
 	}, []);
 
 	return (
-		<div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+		<div
+			style={{
+				width: '100%',
+				height: '100%',
+				margin: 0,
+				padding: 0,
+				display: 'flex', // Helps ensure iframe stretches fully
+				flexDirection: 'column',
+			}}>
 			<iframe
 				ref={iFrameRef}
+				title='Bundled Output'
+				sandbox='allow-scripts allow-same-origin'
+				src='about:blank'
 				style={{
-					width: '100vw',
-					height: '100vh',
+					flex: 1, // Takes all available height
+					width: '100%',
 					border: 'none',
 				}}
-				title='Bundled Output'
-				src='about:blank'
-				sandbox='allow-scripts allow-same-origin'
 			/>
 		</div>
 	);

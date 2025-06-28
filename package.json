@@ -1,6 +1,10 @@
 {
   "name": "collaborative-ide",
   "private": true,
+  "scripts": {
+    "start:frontend": "pnpm --filter ide-frontend run dev",
+    "start:preview": "pnpm --filter ide-preview run dev"
+  },
   "workspaces": [
     "react-file-navigator",
     "ide-frontend",
