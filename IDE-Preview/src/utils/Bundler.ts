@@ -17,7 +17,7 @@ export class Bundler {
 	}
 
 	private static _instance: Bundler | null = null;
-	private _entryPoint: string = './main.tsx';
+	private _entryPoint: string = './src/index.tsx';
 	private _module_files: Record<string, string> = {};
 	private _project_files: Record<string, string> = {};
 	private _moduleResolver: ModuleResolutionUtil;

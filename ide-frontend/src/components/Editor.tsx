@@ -63,7 +63,7 @@ const EditorComponent = ({ iFrameRef }: { iFrameRef: React.RefObject<HTMLIFrameE
 			beforeMount={handleEditorWillMount}
 			onMount={handleEditorDidMount}
 			onChange={handleChange}
-			value={getFileContent(currentFile?.filePath || '') || ''}
+			value={getFileContent(currentFile?.filePath || './src/App.tsx') || ''}
 			options={{
 				codeLens: true,
 				autoClosingBrackets: 'always',
@@ -73,7 +73,6 @@ const EditorComponent = ({ iFrameRef }: { iFrameRef: React.RefObject<HTMLIFrameE
 					enabled: true,
 					independentColorPoolPerBracketType: true,
 				},
-
 				wrappingIndent: 'same',
 				dragAndDrop: true,
 				fontSize: 15,

@@ -29,6 +29,8 @@ Breakdown of every task based on its priority.
     Show preview as soon as the application loads and modules get resolved [In - Progress]:
         RnD on how I can structure the events so it loads the preview on page load, and rebuilds on every change. [Need to be sure that the way its implemented is the correct way].
 
+    File System should resolve ./src or src/ as similar.
+
 
     Middle
     ------
