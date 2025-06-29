@@ -25,6 +25,7 @@ export class Bundler {
 	private _isInitialized: boolean = false;
 	private _builderContext: esbuild.BuildContext | undefined;
 	private _viewer: ViewManager;
+	private _added_dependencies: Record<string, Record<string, any>> = {};
 
 	public get isInitialized(): boolean {
 		return this._isInitialized;
@@ -67,6 +68,7 @@ export class Bundler {
 			console.log('Resoled dependencies');
 
 			this._module_files = this._moduleResolver.getNodeModules();
+			this._added_dependencies = this._moduleResolver.getAddedDependencies();
 
 			this._builderContext = await esbuild.context({
 				bundle: true,
@@ -100,9 +102,9 @@ export class Bundler {
 	}
 
 	public async addProjectDependency(packageName: string, version: string): Promise<void> {
-		const moduleResolver = ModuleResolutionUtil.getInstance();
-		await moduleResolver.resolveDependencies({ [packageName]: version });
-		this._module_files = moduleResolver.getNodeModules();
+		await this._moduleResolver.resolveDependencies({ [packageName]: version });
+		this._module_files = this._moduleResolver.getNodeModules();
+		this._added_dependencies = this._moduleResolver.getAddedDependencies();
 	}
 
 	private CustomFileHandlerPlugin: esbuild.Plugin = {
@@ -133,11 +135,8 @@ export class Bundler {
 					} else {
 						const { packageName, additionalPath } = parsePackagePathSimple(args.path);
 
-						const addedPackages = this._moduleResolver.getAddedDependencies();
-
 						// if a package has an import like - react-dom/client then /client becomes the additionalPath and in that case we should not the default entry point for the package thus keeping it null
-
-						let entryPoint = !additionalPath ? getPackageEntryPoint(addedPackages[packageName], args.kind) : null;
+						let entryPoint = !additionalPath ? getPackageEntryPoint(this._added_dependencies[packageName], args.kind) : null;
 
 						if (entryPoint) {
 							absolutePath = Path.join('/node_modules', packageName, entryPoint);
@@ -265,6 +264,11 @@ function getLoader(ext: string): esbuild.Loader {
 
 const fetchFileContents = (fileTree: Record<string, string>, filePath: string): { contents: string; ext: string } => {
 	const fileExtension = Path.extname(filePath);
+
+	if (!fileTree[filePath]) {
+		throw new Error('File path does not exists');
+	}
+
 	return { contents: fileTree[filePath], ext: fileExtension };
 };
 

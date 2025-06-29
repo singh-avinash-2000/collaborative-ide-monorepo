@@ -93,27 +93,29 @@ export class ModuleResolutionUtil {
 
 		const rootDependencyPromiseArray: Promise<GeneratedModuleFiles>[] = [];
 
-		Object.entries(dependencies).map(async ([packageName, packageVersion]) => {
+		for (const [packageName, version] of Object.entries(dependencies)) {
 			if (!this._addedDependencies[packageName]) {
-				packageVersion = packageVersion.replace(/[^0-9.]/g, '');
-				rootDependencyPromiseArray.push(this.generateModuleFiles(packageName, packageVersion));
+				const cleanVersion = version.replace(/[^0-9.]/g, '');
+				rootDependencyPromiseArray.push(this.generateModuleFiles(packageName, cleanVersion));
 			}
-		});
+		}
 
 		const rootDependencyFiles = await Promise.all(rootDependencyPromiseArray);
 
-		rootDependencyFiles.forEach(({ packageName, files }) => {
-			const filePathPrefix = 'node_modules/' + packageName + '/';
-			Object.keys(files).forEach(async (filePath) => {
+		for (const { packageName, files } of rootDependencyFiles) {
+			const filePathPrefix = `node_modules/${packageName}/`;
+
+			for (const filePath of Object.keys(files)) {
+				const fullPath = filePathPrefix + filePath;
+				this._fs[fullPath] = files[filePath];
+
 				if (filePath.toLowerCase() === 'package.json') {
 					const dependencyPackageJson = JSON.parse(files[filePath]);
 					this._addedDependencies[packageName] = dependencyPackageJson;
 					await this.resolveDependencies(dependencyPackageJson.dependencies || {});
 				}
-
-				this._fs[filePathPrefix + filePath] = files[filePath];
-			});
-		});
+			}
+		}
 	}
 
 	public getNodeModules() {
